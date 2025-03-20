@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -19,7 +19,6 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,22 +26,31 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      // For demo purposes, any of the mock users' emails will work
-      // In a real app, you would validate both email and password
-      const success = await login(email, password);
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      if (success) {
-        toast({
-          title: "Login successful",
+      const data = await response.json();
+
+      if (response.ok) {
+        // Call the login function from auth context to set the user state
+        await login(email,password);
+
+        toast.success("Login successful", {
           description: "Welcome back to MediCare",
         });
+
         router.push("/dashboard");
       } else {
-        setError("Invalid email or password");
+        setError(data.message || "Invalid email or password");
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("An error occurred during login");
+      setError("An error occurred during login. Please try again.");
     } finally {
       setIsLoading(false);
     }
